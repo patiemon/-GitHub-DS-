@@ -23,6 +23,8 @@
 
 #define IMAGE_LOAD_ERR_TITLE	TEXT("画像読み込みエラー")
 
+
+
 typedef struct STRUCT_IMAGE
 {
 	char path[PATH_MAX];		//パス
@@ -45,7 +47,7 @@ enum GAME_SCENE {
 enum CHARA_SPEED {
 	CHARA_SPEED_RELOAD = 1,
 	CHARA_SPEED_REX = 2,
-	CHARA_SPEED_USE = 10
+	CHARA_SPEED_USE = 5
 };	//キャラクターのスピード
 
 typedef struct STRUCT_CHARA
@@ -54,6 +56,11 @@ typedef struct STRUCT_CHARA
 	int speed;					//速さ
 	int CenterX;				//中心X
 	int CenterY;				//中心Y
+
+	int JumpNowY;
+	int JumpRakkaY;
+
+	BOOL CanJunp;
 
 }CHARA;	//キャラクター構造体
 
@@ -142,6 +149,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	SetMouseDispFlag(TRUE);			//マウスカーソルを表示	
 
+    player.CanJunp = TRUE;
+
 	int DrawX = 0;	//表示位置X
 	int DrawY = 0;	//表示位置Y
 
@@ -165,8 +174,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 		MY_FPS_UPDATE();	//FPSの処理[更新]
 
-		if (MY_KEY_DOWN(KEY_INPUT_LEFT) == TRUE) { mouse.Point.x = mouse.Point.x + CHARA_SPEED_USE; }
-		if (MY_KEY_DOWN(KEY_INPUT_RIGHT) == TRUE) { mouse.Point.x = mouse.Point.x - CHARA_SPEED_USE; }
+
+		if (MY_KEY_DOWN(KEY_INPUT_LEFT) == TRUE) { mouse.Point.x++; }
+		if (MY_KEY_DOWN(KEY_INPUT_RIGHT) == TRUE) { mouse.Point.x--; }
 
 		//シーンごとに処理を行う
 		switch (GameScene)
@@ -444,24 +454,53 @@ VOID MY_PLAY(VOID)
 VOID MY_PLAY_PROC(VOID)
 {
 	//スペースキーを押したら、エンドシーンへ移動する
-	if (MY_KEY_DOWN(KEY_INPUT_SPACE) == TRUE)
+	if (MY_KEY_DOWN(KEY_INPUT_I) == TRUE)
 	{
 		GameScene = GAME_SCENE_END;
 	}
 
-	//プレイヤーの中心位置を設定する
-	player.CenterX = mouse.Point.x;
-	player.CenterY = mouse.Point.y;
+	if (MY_KEY_DOWN(KEY_INPUT_A) == TRUE) { player.CenterX = player.CenterX - CHARA_SPEED_USE; }
+	if (MY_KEY_DOWN(KEY_INPUT_D) == TRUE) { player.CenterX = player.CenterX + CHARA_SPEED_USE; }
+
+	if (MY_KEY_DOWN(KEY_INPUT_SPACE) == TRUE && player.CanJunp == TRUE)
+	{		
+		player.CanJunp == FALSE;
+
+		while (TRUE)
+		{
+			int JumpTop = player.CenterY - 60;
+			player.CenterY = player.CenterY--;
+
+			if (player.CenterY = JumpTop)
+			{
+				player.CanJunp == TRUE;
+				break;
+			}
+		}
+	}
+	//if (MY_KEY_UP(KEY_INPUT_SPACE) == TRUE)
+	//{
+	//	for (int i = 0; i < 10; i++)
+	//	{
+	//		player.CenterY++;
+	//	}
+	//}
 
 	//プレイヤーの位置に置き換える
 	player.image.x = player.CenterX - player.image.width / 2;
 	player.image.y = player.CenterY - player.image.height / 2;
 
 	//画面外にプレイヤーが行かないようにする
-	if (player.image.x < 0) { player.image.x = 0; }
-	if (player.image.x + player.image.width > GAME_WIDTH) { player.image.x = GAME_WIDTH - player.image.width; }
-	if (player.image.y < 0) { player.image.y = 0; }
-	if (player.image.y + player.image.height > GAME_HEIGHT) { player.image.y = GAME_HEIGHT - player.image.height; }
+	if (player.CenterX < 0) { player.CenterX = 0; }
+	if (player.CenterX + player.image.width > GAME_WIDTH) { player.CenterX = GAME_WIDTH - player.image.width; }
+	if (player.CenterY < 0) { player.CenterY = 0; }
+	if (player.CenterY + player.image.height > GAME_HEIGHT) { player.CenterY = GAME_HEIGHT - player.image.height; }
+
+	////画面外にプレイヤーが行かないようにする
+	//if (player.image.x < 0) { player.image.x = 0; }
+	//if (player.image.x + player.image.width > GAME_WIDTH) { player.image.x = GAME_WIDTH - player.image.width; }
+	//if (player.image.y < 0) { player.image.y = 0; }
+	//if (player.image.y + player.image.height > GAME_HEIGHT) { player.image.y = GAME_HEIGHT - player.image.height; }
 
 	return;
 }
@@ -476,7 +515,7 @@ VOID MY_PLAY_DRAW(VOID)
 		player.image.x + player.image.width * 2, player.image.y + player.image.height * 2,	//ココまで引き伸ばす
 		player.image.handle, TRUE);
 
-	DrawString(0, 0, "プレイ画面(スペースキーを押して下さい)", GetColor(255, 255, 255));
+	DrawString(0, 0, "プレイ画面(Iキーを押して下さい)", GetColor(255, 255, 255));
 	return;
 }
 
