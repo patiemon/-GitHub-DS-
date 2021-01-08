@@ -19,6 +19,7 @@
 #define IMAGE_PLAY_BK_PATH			TEXT(".\\IMAGE\\PLAY_BK.png")		//タイトル背景の画像
 #define IMAGE_TITLE_BK_PATH			TEXT(".\\IMAGE\\TITLE_BK.png")		//タイトル背景の画像
 #define IMAGE_PLAYER_PATH		    TEXT(".\\IMAGE\\PLAYER.png")	//プレイヤーの画像
+#define IMAGE_DINO1_PATH            TEXT(".\\IMAGE\\DINO1.png")
 
 
 #define IMAGE_LOAD_ERR_TITLE	TEXT("画像読み込みエラー")
@@ -50,6 +51,12 @@ enum CHARA_SPEED {
 	CHARA_SPEED_USE = 5
 };	//キャラクターのスピード
 
+enum DINO_SPEED {
+	DINO_SPEED_WARK = 1,
+	DINO_SPEED_NORMAL = 4,
+	DINO_SPPED_ANGRY = 5
+};
+
 typedef struct STRUCT_CHARA
 {
 	IMAGE image;				//IMAGE構造体
@@ -63,6 +70,20 @@ typedef struct STRUCT_CHARA
 	BOOL CanJunp;
 
 }CHARA;	//キャラクター構造体
+
+typedef struct STRUCT_DINO
+{
+	IMAGE image;				//IMAGE構造体
+	int speed;					//速さ
+	int CenterX;				//中心X
+	int CenterY;				//中心Y
+
+	int JumpNowY;
+	int JumpRakkaY;
+
+	BOOL CanJunp;
+
+}DINO;	//敵キャラ構造体
 
 //int型のPOINT構造体
 typedef struct STRUCT_I_POINT
@@ -102,6 +123,7 @@ int GameScene;		//ゲームシーンを管理
 IMAGE ImageBack;		//ゲームの背景
 IMAGE ImageTitleBK;		//タイトル背景の画面
 CHARA player;			//ゲームのキャラ
+DINO dino;				//ゲームの敵キャラ
 
 
 //########## プロトタイプ宣言 ##########
@@ -462,13 +484,16 @@ VOID MY_PLAY_PROC(VOID)
 	if (MY_KEY_DOWN(KEY_INPUT_A) == TRUE) { player.CenterX = player.CenterX - CHARA_SPEED_USE; }
 	if (MY_KEY_DOWN(KEY_INPUT_D) == TRUE) { player.CenterX = player.CenterX + CHARA_SPEED_USE; }
 
+	player.CenterY += 10;
+	dino.CenterY += 10;
+
 	if (MY_KEY_DOWN(KEY_INPUT_SPACE) == TRUE && player.CanJunp == TRUE)
 	{		
 		player.CanJunp == FALSE;
 
 		while (TRUE)
 		{
-			int JumpTop = player.CenterY - 60;
+			int JumpTop = player.CenterY - 20;
 			player.CenterY = player.CenterY--;
 
 			if (player.CenterY = JumpTop)
@@ -490,11 +515,19 @@ VOID MY_PLAY_PROC(VOID)
 	player.image.x = player.CenterX - player.image.width / 2;
 	player.image.y = player.CenterY - player.image.height / 2;
 
+	dino.image.x = dino.CenterX - dino.image.width / 2;
+	dino.image.y = dino.CenterY - dino.image.height / 2;
+
 	//画面外にプレイヤーが行かないようにする
 	if (player.CenterX < 0) { player.CenterX = 0; }
 	if (player.CenterX + player.image.width > GAME_WIDTH) { player.CenterX = GAME_WIDTH - player.image.width; }
 	if (player.CenterY < 0) { player.CenterY = 0; }
 	if (player.CenterY + player.image.height > GAME_HEIGHT) { player.CenterY = GAME_HEIGHT - player.image.height; }
+
+	if (dino.CenterX < 0) { dino.CenterX = 0; }
+	if (dino.CenterX + dino.image.width > GAME_WIDTH) { dino.CenterX = GAME_WIDTH - dino.image.width; }
+	if (dino.CenterY < 0) { dino.CenterY = 0; }
+	if (dino.CenterY + dino.image.height > GAME_HEIGHT) { dino.CenterY = GAME_HEIGHT - dino.image.height; }
 
 	////画面外にプレイヤーが行かないようにする
 	//if (player.image.x < 0) { player.image.x = 0; }
@@ -515,7 +548,13 @@ VOID MY_PLAY_DRAW(VOID)
 		player.image.x + player.image.width * 2, player.image.y + player.image.height * 2,	//ココまで引き伸ばす
 		player.image.handle, TRUE);
 
+	DrawExtendGraph(
+		dino.image.x, dino.image.y,														//ココから
+		dino.image.x + dino.image.width * 2, dino.image.y + dino.image.height * 2,	//ココまで引き伸ばす
+		dino.image.handle, TRUE);
+
 	DrawString(0, 0, "プレイ画面(Iキーを押して下さい)", GetColor(255, 255, 255));
+
 	return;
 }
 
@@ -590,6 +629,22 @@ BOOL MY_LOAD_IMAGE(VOID)
 	player.CenterX = player.image.x + player.image.width / 2;		//画像の横の中心を探す
 	player.CenterY = player.image.y + player.image.height / 2;		//画像の縦の中心を探す
 	player.speed = CHARA_SPEED_USE;
+
+	//敵キャラの画像
+	strcpy_s(dino.image.path, IMAGE_DINO1_PATH);		//パスの設定
+	dino.image.handle = LoadGraph(dino.image.path);	//読み込み
+	if (dino.image.handle == -1)
+	{
+		//エラーメッセージ表示
+		MessageBox(GetMainWindowHandle(), IMAGE_DINO1_PATH, IMAGE_LOAD_ERR_TITLE, MB_OK);
+		return FALSE;
+	}
+	GetGraphSize(dino.image.handle, &dino.image.width, &dino.image.height);	//画像の幅と高さを取得
+	dino.image.x = GAME_WIDTH / 2 - dino.image.width / 2;		//左右中央揃え
+	dino.image.y = GAME_HEIGHT / 2 - dino.image.height / 2;		//上下中央揃え
+	dino.CenterX = dino.image.x + dino.image.width / 2;		//画像の横の中心を探す
+	dino.CenterY = dino.image.y + dino.image.height / 2;		//画像の縦の中心を探す
+	dino.speed = DINO_SPEED_NORMAL;
 
 	return TRUE;
 }
