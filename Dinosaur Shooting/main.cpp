@@ -1,4 +1,5 @@
 #include "DxLib.h"
+#include <time.h>
 
 //########## マクロ定義 ##########
 #define GAME_WIDTH			800	//画面の横の大きさ
@@ -67,7 +68,7 @@ typedef struct STRUCT_CHARA
 	int JumpNowY;
 	int JumpRakkaY;
 
-	BOOL CanJunp;
+	BOOL CanJump;
 
 }CHARA;	//キャラクター構造体
 
@@ -81,7 +82,9 @@ typedef struct STRUCT_DINO
 	int JumpNowY;
 	int JumpRakkaY;
 
-	BOOL CanJunp;
+	BOOL CanJump;
+	BOOL CanMove;
+	BOOL DinoMove;
 
 }DINO;	//敵キャラ構造体
 
@@ -171,7 +174,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	SetMouseDispFlag(TRUE);			//マウスカーソルを表示	
 
-    player.CanJunp = TRUE;
+    player.CanJump = TRUE;
+	dino.CanJump = TRUE;
+	dino.CanMove = TRUE;
 
 	int DrawX = 0;	//表示位置X
 	int DrawY = 0;	//表示位置Y
@@ -487,9 +492,55 @@ VOID MY_PLAY_PROC(VOID)
 	player.CenterY += 10;
 	dino.CenterY += 10;
 
-	if (MY_KEY_DOWN(KEY_INPUT_SPACE) == TRUE && player.CanJunp == TRUE)
+	if (dino.CanMove == TRUE)
+	{
+		srand((unsigned int)time(NULL)); // 現在時刻の情報で初期化
+		dino.DinoMove = rand() % 3 + 1; // 1～3の乱数生成
+		dino.CanMove = false;
+	}
+
+	//rand関数サンプルテキスト
+	//for (int i = 0; i < 3; i++) {
+	//	srand((unsigned int)time(NULL)); // 現在時刻の情報で初期化
+	//	printf("%d回目の乱数発生: ", i + 1);
+
+	//	// 1から10までの乱数を発生
+	//	for (int j = 0; j < 3; j++) {
+	//		printf("%d, ", rand() % 10 + 1);
+	//	}
+	//	sleep(1); // time関数で取得する時刻を変えるために1秒待機
+	//	printf("\n");
+	//}
+	//
+
+	if (dino.DinoMove == 1)
+	{
+		dino.CenterX -=10;
+
+		if (dino.CenterX <= 0 + dino.image.width)
+		{
+			dino.CanMove = TRUE;
+		}
+	}
+
+	if (dino.DinoMove == 2)
+	{
+		dino.CenterX += 10;
+
+		if (dino.CenterX >= GAME_WIDTH - dino.image.width)
+		{
+			dino.CanMove = TRUE;
+		}
+	}
+
+	if (dino.DinoMove == 3)
+	{
+		dino.CanMove = TRUE;
+	}
+
+	if (MY_KEY_DOWN(KEY_INPUT_SPACE) == TRUE && player.CanJump == TRUE)
 	{		
-		player.CanJunp == FALSE;
+		player.CanJump == FALSE;
 
 		while (TRUE)
 		{
@@ -498,7 +549,7 @@ VOID MY_PLAY_PROC(VOID)
 
 			if (player.CenterY = JumpTop)
 			{
-				player.CanJunp == TRUE;
+				player.CanJump == TRUE;
 				break;
 			}
 		}
@@ -519,15 +570,20 @@ VOID MY_PLAY_PROC(VOID)
 	dino.image.y = dino.CenterY - dino.image.height / 2;
 
 	//画面外にプレイヤーが行かないようにする
-	if (player.CenterX < 0) { player.CenterX = 0; }
-	if (player.CenterX + player.image.width > GAME_WIDTH) { player.CenterX = GAME_WIDTH - player.image.width; }
-	if (player.CenterY < 0) { player.CenterY = 0; }
-	if (player.CenterY + player.image.height > GAME_HEIGHT) { player.CenterY = GAME_HEIGHT - player.image.height; }
+	if (player.CenterX - player.image.width / 2 < 0) { player.CenterX = 0 + player.image.width / 2; }
+	if (player.CenterX + player.image.width / 2 > GAME_WIDTH) { player.CenterX = GAME_WIDTH - player.image.width / 2; }
+	if (player.CenterY - player.image.height / 2 < 0) { player.CenterY = 0 + player.image.height / 2; }
+	if (player.CenterY + player.image.height / 2 > GAME_HEIGHT) { player.CenterY = GAME_HEIGHT - player.image.height / 2; }
 
-	if (dino.CenterX < 0) { dino.CenterX = 0; }
-	if (dino.CenterX + dino.image.width > GAME_WIDTH) { dino.CenterX = GAME_WIDTH - dino.image.width; }
-	if (dino.CenterY < 0) { dino.CenterY = 0; }
-	if (dino.CenterY + dino.image.height > GAME_HEIGHT) { dino.CenterY = GAME_HEIGHT - dino.image.height; }
+	if (dino.CenterX - dino.image.width / 2 < 0) { dino.CenterX = 0 + dino.image.width / 2; }
+	if (dino.CenterX + dino.image.width / 2 > GAME_WIDTH) { dino.CenterX = GAME_WIDTH - dino.image.width / 2; }
+	if (dino.CenterY - dino.image.height / 2 < 0) { dino.CenterY = 0 + dino.image.height / 2; }
+	if (dino.CenterY + dino.image.height / 2 > GAME_HEIGHT) { dino.CenterY = GAME_HEIGHT - dino.image.height / 2; }
+	
+	//if (dino.CenterX < 0) { dino.CenterX = 0; }
+	//if (dino.CenterX + dino.image.width > GAME_WIDTH) { dino.CenterX = GAME_WIDTH - dino.image.width; }
+	//if (dino.CenterY < 0) { dino.CenterY = 0; }
+	//if (dino.CenterY + dino.image.height > GAME_HEIGHT) { dino.CenterY = GAME_HEIGHT - dino.image.height; }
 
 	////画面外にプレイヤーが行かないようにする
 	//if (player.image.x < 0) { player.image.x = 0; }
@@ -543,15 +599,27 @@ VOID MY_PLAY_DRAW(VOID)
 {
 	DrawGraph(ImageBack.x, ImageBack.y, ImageBack.handle, TRUE);
 
-	DrawExtendGraph(
-		player.image.x, player.image.y,														//ココから
-		player.image.x + player.image.width * 2, player.image.y + player.image.height * 2,	//ココまで引き伸ばす
-		player.image.handle, TRUE);
+	//DrawExtendGraph(
+	//	player.image.x, player.image.y,														//ココから
+	//	player.image.x + player.image.width * 2, player.image.y + player.image.height * 2,	//ココまで引き伸ばす
+	//	player.image.handle, TRUE);
 
-	DrawExtendGraph(
-		dino.image.x, dino.image.y,														//ココから
-		dino.image.x + dino.image.width * 2, dino.image.y + dino.image.height * 2,	//ココまで引き伸ばす
-		dino.image.handle, TRUE);
+	DrawGraph(
+		player.image.x , player.image.y , player.image.handle , TRUE
+	);
+
+	DrawBox(player.image.x, player.image.y, player.image.x + player.image.width, player.image.y + player.image.height, GetColor(255, 255, 255), FALSE);
+
+	//DrawExtendGraph(
+	//	dino.image.x, dino.image.y,														//ココから
+	//	dino.image.x + dino.image.width * 2, dino.image.y + dino.image.height * 2,	//ココまで引き伸ばす
+	//	dino.image.handle, TRUE);
+
+	DrawGraph(
+		dino.image.x, dino.image.y, dino.image.handle, TRUE
+	);
+
+	DrawBox(dino.image.x, dino.image.y, dino.image.x + dino.image.width, dino.image.y + dino.image.height, GetColor(255, 255, 255), FALSE);
 
 	DrawString(0, 0, "プレイ画面(Iキーを押して下さい)", GetColor(255, 255, 255));
 
@@ -630,7 +698,9 @@ BOOL MY_LOAD_IMAGE(VOID)
 	player.CenterY = player.image.y + player.image.height / 2;		//画像の縦の中心を探す
 	player.speed = CHARA_SPEED_USE;
 
-	//敵キャラの画像
+
+
+
 	strcpy_s(dino.image.path, IMAGE_DINO1_PATH);		//パスの設定
 	dino.image.handle = LoadGraph(dino.image.path);	//読み込み
 	if (dino.image.handle == -1)
@@ -645,6 +715,25 @@ BOOL MY_LOAD_IMAGE(VOID)
 	dino.CenterX = dino.image.x + dino.image.width / 2;		//画像の横の中心を探す
 	dino.CenterY = dino.image.y + dino.image.height / 2;		//画像の縦の中心を探す
 	dino.speed = DINO_SPEED_NORMAL;
+
+
+
+
+//	//敵キャラの画像
+//	strcpy_s(dino.image.path, IMAGE_DINO1_PATH);		//パスの設定
+//	dino.image.handle = LoadGraph(dino.image.path);	//読み込み
+//	if (dino.image.handle == -1)
+//	{
+//		//エラーメッセージ表示
+//		MessageBox(GetMainWindowHandle(), IMAGE_DINO1_PATH, IMAGE_LOAD_ERR_TITLE, MB_OK);
+//		return FALSE;
+//	}
+//	GetGraphSize(dino.image.handle, &dino.image.width, &dino.image.height);	//画像の幅と高さを取得
+//	dino.image.x = GAME_WIDTH / 2 - dino.image.width / 2;		//左右中央揃え
+//	dino.image.y = GAME_HEIGHT / 2 - dino.image.height / 2;		//上下中央揃え
+//	dino.CenterX = dino.image.x + dino.image.width / 2;		//画像の横の中心を探す
+//	dino.CenterY = dino.image.y + dino.image.height / 2;		//画像の縦の中心を探す
+//	dino.speed = DINO_SPEED_NORMAL;
 
 	return TRUE;
 }
