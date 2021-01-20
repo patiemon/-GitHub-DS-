@@ -49,7 +49,7 @@ enum GAME_SCENE {
 enum CHARA_SPEED {
 	CHARA_SPEED_RELOAD = 1,
 	CHARA_SPEED_REX = 2,
-	CHARA_SPEED_USE = 5
+	CHARA_SPEED_USE = 10
 };	//キャラクターのスピード
 
 enum DINO_SPEED {
@@ -65,8 +65,10 @@ typedef struct STRUCT_CHARA
 	int CenterX;				//中心X
 	int CenterY;				//中心Y
 
-	int JumpNowY;
-	int JumpRakkaY;
+	int jump = 0;
+
+	int JumpNowY = 500;
+	int JumpRakka = FALSE;
 
 	BOOL CanJump;
 
@@ -79,8 +81,8 @@ typedef struct STRUCT_DINO
 	int CenterX;				//中心X
 	int CenterY;				//中心Y
 
-	int JumpNowY;
-	int JumpRakkaY;
+	int JumpNowY = 500;
+	int JumpRakkaY = 500;
 
 	BOOL CanJump;
 	BOOL CanMove;
@@ -177,6 +179,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     player.CanJump = TRUE;
 	dino.CanJump = TRUE;
 	dino.CanMove = TRUE;
+
+	int jump = 0;
+
+	player.CenterX = 50;
+	player.CenterY = 500;
+
+	dino.CenterX = 550;
+	dino.CenterY = 500;
 
 	int DrawX = 0;	//表示位置X
 	int DrawY = 0;	//表示位置Y
@@ -489,8 +499,8 @@ VOID MY_PLAY_PROC(VOID)
 	if (MY_KEY_DOWN(KEY_INPUT_A) == TRUE) { player.CenterX = player.CenterX - CHARA_SPEED_USE; }
 	if (MY_KEY_DOWN(KEY_INPUT_D) == TRUE) { player.CenterX = player.CenterX + CHARA_SPEED_USE; }
 
-	player.CenterY += 10;
-	dino.CenterY += 10;
+	/*player.CenterY += 10;
+	dino.CenterY += 10;*/
 
 	if (dino.CanMove == TRUE)
 	{
@@ -513,6 +523,8 @@ VOID MY_PLAY_PROC(VOID)
 	//}
 	//
 
+//--------------------------------------------------------------------------------------------------------------------------------------------------------//
+
 	if (dino.DinoMove == 1)
 	{
 		dino.CenterX -=10;
@@ -527,7 +539,7 @@ VOID MY_PLAY_PROC(VOID)
 	{
 		dino.CenterX += 10;
 
-		if (dino.CenterX >= GAME_WIDTH - dino.image.width)
+		if (dino.CenterX >= GAME_WIDTH - dino.image.width -	10)
 		{
 			dino.CanMove = TRUE;
 		}
@@ -538,29 +550,33 @@ VOID MY_PLAY_PROC(VOID)
 		dino.CanMove = TRUE;
 	}
 
+	//--------------------------------------------------------------------------------------------------------------------------------------------------------//
+
 	if (MY_KEY_DOWN(KEY_INPUT_SPACE) == TRUE && player.CanJump == TRUE)
-	{		
-		player.CanJump == FALSE;
+	{
+		player.CanJump = FALSE;
+	}
 
-		while (TRUE)
+	if (player.CanJump == FALSE)
+	{
+		if (player.jump <= 30)
 		{
-			int JumpTop = player.CenterY - 20;
-			player.CenterY = player.CenterY--;
-
-			if (player.CenterY = JumpTop)
+			player.CenterY-= 10;
+			player.JumpRakka = TRUE;
+		}
+		else if(player.JumpRakka == TRUE)
+		{
+			player.CenterY+= 10;
+			if (player.jump == 60)
 			{
-				player.CanJump == TRUE;
-				break;
+				player.JumpRakka = FALSE;
+				player.CanJump = TRUE;
+				player.jump = 0;
 			}
 		}
+		player.jump++;
+
 	}
-	//if (MY_KEY_UP(KEY_INPUT_SPACE) == TRUE)
-	//{
-	//	for (int i = 0; i < 10; i++)
-	//	{
-	//		player.CenterY++;
-	//	}
-	//}
 
 	//プレイヤーの位置に置き換える
 	player.image.x = player.CenterX - player.image.width / 2;
@@ -579,17 +595,6 @@ VOID MY_PLAY_PROC(VOID)
 	if (dino.CenterX + dino.image.width / 2 > GAME_WIDTH) { dino.CenterX = GAME_WIDTH - dino.image.width / 2; }
 	if (dino.CenterY - dino.image.height / 2 < 0) { dino.CenterY = 0 + dino.image.height / 2; }
 	if (dino.CenterY + dino.image.height / 2 > GAME_HEIGHT) { dino.CenterY = GAME_HEIGHT - dino.image.height / 2; }
-	
-	//if (dino.CenterX < 0) { dino.CenterX = 0; }
-	//if (dino.CenterX + dino.image.width > GAME_WIDTH) { dino.CenterX = GAME_WIDTH - dino.image.width; }
-	//if (dino.CenterY < 0) { dino.CenterY = 0; }
-	//if (dino.CenterY + dino.image.height > GAME_HEIGHT) { dino.CenterY = GAME_HEIGHT - dino.image.height; }
-
-	////画面外にプレイヤーが行かないようにする
-	//if (player.image.x < 0) { player.image.x = 0; }
-	//if (player.image.x + player.image.width > GAME_WIDTH) { player.image.x = GAME_WIDTH - player.image.width; }
-	//if (player.image.y < 0) { player.image.y = 0; }
-	//if (player.image.y + player.image.height > GAME_HEIGHT) { player.image.y = GAME_HEIGHT - player.image.height; }
 
 	return;
 }
