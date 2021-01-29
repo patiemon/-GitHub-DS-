@@ -1,5 +1,6 @@
 #include "DxLib.h"
 #include <time.h>
+#include <stdlib.h>
 
 //########## マクロ定義 ##########
 #define GAME_WIDTH			800	//画面の横の大きさ
@@ -21,6 +22,7 @@
 #define IMAGE_TITLE_BK_PATH			TEXT(".\\IMAGE\\TITLE_BK.png")		//タイトル背景の画像
 #define IMAGE_PLAYER_PATH		    TEXT(".\\IMAGE\\PLAYER.png")	//プレイヤーの画像
 #define IMAGE_DINO1_PATH            TEXT(".\\IMAGE\\DINO1.png")
+#define IMAGE_GAMEOVER_BK_PATH		TEXT(".\\IMAGE\\GAMEOVER_BK.png")
 
 
 #define IMAGE_LOAD_ERR_TITLE	TEXT("画像読み込みエラー")
@@ -54,8 +56,8 @@ enum CHARA_SPEED {
 
 enum DINO_SPEED {
 	DINO_SPEED_WARK = 1,
-	DINO_SPEED_NORMAL = 4,
-	DINO_SPPED_ANGRY = 5
+	DINO_SPEED_NORMAL = 10,
+	DINO_SPPED_ANGRY = 10
 };
 
 typedef struct STRUCT_CHARA
@@ -65,12 +67,20 @@ typedef struct STRUCT_CHARA
 	int CenterX;				//中心X
 	int CenterY;				//中心Y
 
+	BOOL Muteki = TRUE;
+	int Mutekizikan;
+	int Mutekizikan_syuuryou;
+
 	int jump = 0;
 
-	int JumpNowY = 500;
 	int JumpRakka = FALSE;
 
 	BOOL CanJump;
+
+	int HP = 100;
+	BOOL Canhit;
+
+	int tenmetsu;
 
 }CHARA;	//キャラクター構造体
 
@@ -81,12 +91,18 @@ typedef struct STRUCT_DINO
 	int CenterX;				//中心X
 	int CenterY;				//中心Y
 
-	int JumpNowY = 500;
-	int JumpRakkaY = 500;
-
 	BOOL CanJump;
 	BOOL CanMove;
 	BOOL DinoMove;
+	
+	int DinoMoveRAND[3];
+	BOOL DinoMove0 = TRUE;
+	BOOL DinoMove1 = FALSE;
+	BOOL DinoMove2 = FALSE;
+
+	int houkou = 0;
+
+	int HP = 100;
 
 }DINO;	//敵キャラ構造体
 
@@ -127,6 +143,7 @@ int GameScene;		//ゲームシーンを管理
 
 IMAGE ImageBack;		//ゲームの背景
 IMAGE ImageTitleBK;		//タイトル背景の画面
+IMAGE ImageGameOverBK;  //ゲームオーバー画面
 CHARA player;			//ゲームのキャラ
 DINO dino;				//ゲームの敵キャラ
 
@@ -158,6 +175,8 @@ VOID MY_END(VOID);			//エンド画面
 VOID MY_END_PROC(VOID);		//エンド画面の処理
 VOID MY_END_DRAW(VOID);		//エンド画面の描画
 
+//VOID MY_CHARA_JUMP(VOID);
+
 BOOL MY_LOAD_IMAGE(VOID);		//画像をまとめて読み込む関数
 VOID MY_DELETE_IMAGE(VOID);		//画像をまとめて削除する関数
 
@@ -179,6 +198,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     player.CanJump = TRUE;
 	dino.CanJump = TRUE;
 	dino.CanMove = TRUE;
+	player.Canhit = TRUE;
 
 	int jump = 0;
 
@@ -495,6 +515,10 @@ VOID MY_PLAY_PROC(VOID)
 	{
 		GameScene = GAME_SCENE_END;
 	}
+	if (player.HP <= 0)
+	{
+		GameScene = GAME_SCENE_END;
+	}
 
 	if (MY_KEY_DOWN(KEY_INPUT_A) == TRUE) { player.CenterX = player.CenterX - CHARA_SPEED_USE; }
 	if (MY_KEY_DOWN(KEY_INPUT_D) == TRUE) { player.CenterX = player.CenterX + CHARA_SPEED_USE; }
@@ -505,9 +529,137 @@ VOID MY_PLAY_PROC(VOID)
 	if (dino.CanMove == TRUE)
 	{
 		srand((unsigned int)time(NULL)); // 現在時刻の情報で初期化
-		dino.DinoMove = rand() % 3 + 1; // 1～3の乱数生成
+		for (int DM = 0; DM < 3; DM++)
+		{
+			dino.DinoMoveRAND[DM] = rand() % 3 + 1; // 1～3の乱数生成
+		}
+		dino.DinoMove0 = TRUE;
 		dino.CanMove = false;
 	}
+
+	//--------------------------------------------------------------------------------配列1個目(0)の時のDINOMOVE処理
+	if (dino.DinoMove0 == TRUE)
+	{
+		if (dino.DinoMoveRAND[0] == 1)
+		{
+			if (dino.CenterX <= dino.image.width / 2)
+			{
+				dino.DinoMove0 = false;
+				dino.DinoMove1 = TRUE;
+			}
+			else
+			{
+				dino.CenterX -= DINO_SPEED_NORMAL;
+			}
+		}
+
+		else if (dino.DinoMoveRAND[0] == 2)
+		{
+			if (dino.CenterX + dino.image.width / 2 >= GAME_WIDTH)
+			{
+				dino.DinoMove0 = false;
+				dino.DinoMove1 = TRUE;
+			}
+			else
+			{
+				dino.CenterX += DINO_SPEED_NORMAL;
+			}
+		}
+
+		else if (dino.DinoMoveRAND[0] == 3)
+		{
+			dino.houkou++;
+			if (dino.houkou >= 100)
+			{
+				dino.houkou = 0;
+				dino.DinoMove0 = false;
+				dino.DinoMove1 = TRUE;
+			}
+		}
+	}
+	//--------------------------------------------------------------------------------配列1個目(0)の時のDINOMOVE処理
+	//--------------------------------------------------------------------------------配列2個目(1)の時のDINOMOVE処理
+	if (dino.DinoMove1 == TRUE)
+	{
+		if (dino.DinoMoveRAND[1] == 1)
+		{
+			if (dino.CenterX <= dino.image.width / 2)
+			{
+				dino.DinoMove1 = false;
+				dino.DinoMove2 = TRUE;
+			}
+			else
+			{
+				dino.CenterX -= DINO_SPEED_NORMAL;
+			}
+		}
+
+		else if (dino.DinoMoveRAND[1] == 2)
+		{
+			if (dino.CenterX + dino.image.width / 2 >= GAME_WIDTH)
+			{
+				dino.DinoMove1 = false;
+				dino.DinoMove2 = TRUE;
+			}
+			else
+			{
+				dino.CenterX += DINO_SPEED_NORMAL;
+			}
+		}
+
+		else if (dino.DinoMoveRAND[1] == 3)
+		{
+			dino.houkou++;
+			if (dino.houkou >= 100)
+			{
+				dino.houkou = 0;
+				dino.DinoMove1 = false;
+				dino.DinoMove2 = TRUE;
+			}
+		}
+	}
+	//--------------------------------------------------------------------------------配列2個目(1)の時のDINOMOVE処理
+	//--------------------------------------------------------------------------------配列3個目(2)の時のDINOMOVE処理
+	if (dino.DinoMove2 == TRUE)
+	{
+		if (dino.DinoMoveRAND[2] == 1)
+		{
+			if (dino.CenterX <= dino.image.width / 2)
+			{
+				dino.DinoMove2 = false;
+				dino.CanMove = TRUE;
+			}
+			else
+			{
+				dino.CenterX -= DINO_SPEED_NORMAL;
+			}
+		}
+
+		else if (dino.DinoMoveRAND[2] == 2)
+		{
+			if (dino.CenterX + dino.image.width / 2 >= GAME_WIDTH)
+			{
+				dino.DinoMove2 = false;
+				dino.CanMove = TRUE;
+			}
+			else
+			{
+				dino.CenterX += DINO_SPEED_NORMAL;
+			}
+		}
+
+		else if (dino.DinoMoveRAND[2] == 3)
+		{
+			dino.houkou++;
+			if (dino.houkou >= 100)
+			{
+				dino.houkou = 0;
+				dino.DinoMove2 = false;
+				dino.CanMove = TRUE;
+			}
+		}
+	}
+	//--------------------------------------------------------------------------------配列1個目(0)の時のDINOMOVE処理
 
 	//rand関数サンプルテキスト
 	//for (int i = 0; i < 3; i++) {
@@ -525,30 +677,44 @@ VOID MY_PLAY_PROC(VOID)
 
 //--------------------------------------------------------------------------------------------------------------------------------------------------------//
 
-	if (dino.DinoMove == 1)
-	{
-		dino.CenterX -=10;
+	
 
-		if (dino.CenterX <= 0 + dino.image.width)
-		{
-			dino.CanMove = TRUE;
-		}
-	}
 
-	if (dino.DinoMove == 2)
-	{
-		dino.CenterX += 10;
 
-		if (dino.CenterX >= GAME_WIDTH - dino.image.width -	10)
-		{
-			dino.CanMove = TRUE;
-		}
-	}
+	//if (dino.DinoMove == 1)
+	//{
+	//	dino.CenterX -=10;
 
-	if (dino.DinoMove == 3)
-	{
-		dino.CanMove = TRUE;
-	}
+	//	if (dino.CenterX <= 0 + dino.image.width)
+	//	{
+	//		dino.DinoMove = 3;
+	//		dino.CanMove = TRUE;
+	//	}
+	//}
+
+	//if (dino.DinoMove == 2)
+	//{
+	//	dino.CenterX += 10;
+
+	//	if (dino.CenterX >= GAME_WIDTH / 2)
+	//	{
+	//		dino.CenterX -= 10;
+	//		dino.DinoMove = 3;
+	//		dino.CanMove = TRUE;
+	//	}
+	//}
+
+	//if (dino.DinoMove == 3)
+	//{
+	//	dino.houkou++;
+	//		if (dino.houkou >= 30)
+	//		{
+	//			dino.houkou = 0;
+	//			dino.DinoMove = 0;
+	//			dino.CanMove = TRUE;
+	//		}
+	//}
+
 
 	//--------------------------------------------------------------------------------------------------------------------------------------------------------//
 
@@ -578,6 +744,68 @@ VOID MY_PLAY_PROC(VOID)
 
 	}
 
+	//---------------------------------------------------------------------------------------------------------//
+
+	if (player.Canhit == TRUE)
+	{
+		if (player.CenterX < dino.CenterX)
+		{
+			//プレイヤー右、プレイヤー下　：　ディノ左、ディノ上
+			if (player.CenterX + player.image.width / 2 > dino.CenterX - dino.image.width / 2 && player.CenterY + player.image.height / 2 > dino.CenterY - dino.image.height / 2) {
+				player.HP -= 20;
+				player.Canhit = false;
+			}
+			//プレイヤー右、プレイヤー上　：　ディノ左、ディノ下
+			if (player.CenterX + player.image.width / 2 > dino.CenterX - dino.image.width / 2 && player.CenterY - player.image.height / 2 > dino.CenterY + dino.image.height / 2) {
+				player.HP -= 20;
+				player.Canhit = false;
+			}
+		}
+		if (player.CenterX > dino.CenterX)
+		{
+			//プレイヤー左、プレイヤー下　：　ディノ右、ディノ上
+			if (player.CenterX - player.image.width / 2 < dino.CenterX + dino.image.width / 2 && player.CenterY + player.image.height / 2 > dino.CenterY - dino.image.height / 2) {
+				player.HP -= 20;
+				player.Canhit = false;
+			}
+			//プレイヤー左、プレイヤー上　：　ディノ右、ディノ下
+			if (player.CenterX - player.image.width / 2 < dino.CenterX + dino.image.width / 2 && player.CenterY - player.image.height / 2 > dino.CenterY + dino.image.height / 2) {
+				player.HP -= 20;
+				player.Canhit = false;
+			}
+		}
+	}
+	else
+	{
+
+		if (player.Mutekizikan < 15)
+		{
+			player.Muteki = FALSE;
+		}
+		else
+		{
+			player.Muteki = TRUE;
+			if (player.Mutekizikan == 30)
+			{
+				player.Mutekizikan = 0;
+			}
+		}
+
+		player.Mutekizikan_syuuryou++;
+		player.Mutekizikan++;
+
+		if (player.Mutekizikan_syuuryou == 120)
+		{
+			player.Canhit = TRUE;
+			player.Mutekizikan_syuuryou = 0;
+		}
+
+	
+	}
+
+
+	//---------------------------------------------------------------------------------------------------------//
+
 	//プレイヤーの位置に置き換える
 	player.image.x = player.CenterX - player.image.width / 2;
 	player.image.y = player.CenterY - player.image.height / 2;
@@ -591,10 +819,12 @@ VOID MY_PLAY_PROC(VOID)
 	if (player.CenterY - player.image.height / 2 < 0) { player.CenterY = 0 + player.image.height / 2; }
 	if (player.CenterY + player.image.height / 2 > GAME_HEIGHT) { player.CenterY = GAME_HEIGHT - player.image.height / 2; }
 
-	if (dino.CenterX - dino.image.width / 2 < 0) { dino.CenterX = 0 + dino.image.width / 2; }
+	if (dino.CenterX - dino.image.width / 2 < 10) { dino.CenterX = 0 + dino.image.width / 2; }
 	if (dino.CenterX + dino.image.width / 2 > GAME_WIDTH) { dino.CenterX = GAME_WIDTH - dino.image.width / 2; }
 	if (dino.CenterY - dino.image.height / 2 < 0) { dino.CenterY = 0 + dino.image.height / 2; }
 	if (dino.CenterY + dino.image.height / 2 > GAME_HEIGHT) { dino.CenterY = GAME_HEIGHT - dino.image.height / 2; }
+
+	//-----------------------------------------------------------------------------------------------------------------------------------------//
 
 	return;
 }
@@ -609,9 +839,12 @@ VOID MY_PLAY_DRAW(VOID)
 	//	player.image.x + player.image.width * 2, player.image.y + player.image.height * 2,	//ココまで引き伸ばす
 	//	player.image.handle, TRUE);
 
-	DrawGraph(
-		player.image.x , player.image.y , player.image.handle , TRUE
-	);
+	if (player.Muteki == TRUE)
+	{
+		DrawGraph(
+			player.image.x, player.image.y, player.image.handle, TRUE
+		);
+	}
 
 	DrawBox(player.image.x, player.image.y, player.image.x + player.image.width, player.image.y + player.image.height, GetColor(255, 255, 255), FALSE);
 
@@ -626,7 +859,15 @@ VOID MY_PLAY_DRAW(VOID)
 
 	DrawBox(dino.image.x, dino.image.y, dino.image.x + dino.image.width, dino.image.y + dino.image.height, GetColor(255, 255, 255), FALSE);
 
-	DrawString(0, 0, "プレイ画面(Iキーを押して下さい)", GetColor(255, 255, 255));
+
+	if (player.HP > 30)
+	{
+		DrawBox(0, 0, player.HP * 2, 20, GetColor(0, 0, 255), TRUE);
+	}
+	else
+	{
+		DrawBox(0, 0, player.HP * 2, 20, GetColor(255, 0, 0), TRUE);
+	}
 
 	return;
 }
@@ -654,8 +895,7 @@ VOID MY_END_PROC(VOID)
 //エンド画面の描画
 VOID MY_END_DRAW(VOID)
 {
-	//青の四角を描画
-	DrawBox(10, 10, GAME_WIDTH - 10, GAME_HEIGHT - 10, GetColor(0, 0, 255), TRUE);
+	DrawGraph(ImageBack.x, ImageBack.y, ImageGameOverBK.handle, TRUE);
 
 	DrawString(0, 0, "エンド画面(エスケープキーを押して下さい)", GetColor(255, 255, 255));
 	return;
@@ -686,6 +926,19 @@ BOOL MY_LOAD_IMAGE(VOID)
 	GetGraphSize(ImageBack.handle, &ImageBack.width, &ImageBack.height);	//画像の幅と高さを取得
 	ImageBack.x = GAME_WIDTH / 2 - ImageBack.width / 2;		//左右中央揃え
 	ImageBack.y = GAME_HEIGHT / 2 - ImageBack.height / 2;	//上下中央揃え
+
+	strcpy_s(ImageGameOverBK.path, IMAGE_GAMEOVER_BK_PATH);			//パスの設定
+	ImageGameOverBK.handle = LoadGraph(ImageGameOverBK.path);			//読み込み
+	if (ImageGameOverBK.handle == -1)
+	{
+		//エラーメッセージ表示
+		MessageBox(GetMainWindowHandle(), IMAGE_GAMEOVER_BK_PATH, IMAGE_LOAD_ERR_TITLE, MB_OK);
+		return FALSE;
+	}
+
+	GetGraphSize(ImageGameOverBK.handle, &ImageGameOverBK.width, &ImageGameOverBK.height);	//画像の幅と高さを取得
+	ImageGameOverBK.x = GAME_WIDTH / 2 - ImageGameOverBK.width / 2;		//左右中央揃え
+	ImageGameOverBK.y = GAME_HEIGHT / 2 - ImageGameOverBK.height / 2;	//上下中央揃え
 
 	//プレイヤーの画像
 	strcpy_s(player.image.path, IMAGE_PLAYER_PATH);		//パスの設定
@@ -719,7 +972,7 @@ BOOL MY_LOAD_IMAGE(VOID)
 	dino.image.y = GAME_HEIGHT / 2 - dino.image.height / 2;		//上下中央揃え
 	dino.CenterX = dino.image.x + dino.image.width / 2;		//画像の横の中心を探す
 	dino.CenterY = dino.image.y + dino.image.height / 2;		//画像の縦の中心を探す
-	dino.speed = DINO_SPEED_NORMAL;
+	/*dino.speed = DINO_SPEED_NORMAL;*/
 
 
 
@@ -748,6 +1001,7 @@ VOID MY_DELETE_IMAGE(VOID)
 {
 	DeleteGraph(ImageBack.handle);          //プレイ画面削除
 	DeleteGraph(ImageTitleBK.handle);       //タイトル画面削除
+	DeleteGraph(ImageGameOverBK.handle);
 //	DeleteGraph(player.image.handle);
 
 	return;
